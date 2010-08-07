@@ -1,0 +1,23 @@
+syntax: glob
+bin/
+syntax: glob
+project/boot
+syntax: glob
+target/
+lib/
+lib_managed/
+syntax:regexp
+.DS_Store$
+syntax: glob
+*~
+syntax: regexp
+(.*/)?\#[^/]*\#$
+syntax: regexp
+(.*)\.orig
+syntax: regexp
+\.\#(.*)
+Reference.aux
+Reference.log
+Reference.out
+syntax: regexp
+(.*)\.log
