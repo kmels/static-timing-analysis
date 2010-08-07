@@ -3,26 +3,26 @@ package main
 import scala.util.parsing.combinator.syntactical.StandardTokenParsers
 
 object Parser extends StandardTokenParsers {
-  lexical.reserved ++= Set("OR","AND","NAND","NOR","NOT","input","output")
-  lexical.delimiters ++= Set("=","/")
+  lexical.reserved ++= Set("inputs","output","OR","AND","NAND","NOR","NOT","input","output")
+  lexical.delimiters ++= Set("=","/",",")
 
-  def circuit:Parser[Circuit] = inputs ~ rep(gate) ~ output ^^ {
+  def circuit:Parser[Circuit] = inputs ~ rep1(gate) ~ output ^^ {
     case inputNames ~ gates ~ outputName => Circuit(inputNames,gates,outputName)
   }
 
-  def inputs:Parser[List[String]] = "inputs" ~> "="~> repsep(stringLit,",") 
+  def inputs:Parser[List[String]] = "inputs" ~> "="~> rep1sep(ident,",") 
 
-  def output:Parser[String] = "output" ~> "=" ~> stringLit
+  def output:Parser[String] = "output" ~> "=" ~> ident
 
   def gate:Parser[Gate] = binaryGate | unaryGate
 
   //e.g. AND,OR,NAND,NOR
-  def binaryGate:Parser[BinaryGate] = stringLit ~ "=" ~ stringLit ~ binaryOperation ~ stringLit ~ delaySpecs ^^ {
+  def binaryGate:Parser[BinaryGate] = ident ~ "=" ~ ident ~ binaryOperation ~ ident ~ delaySpecs ^^ {
     case name ~ "=" ~ input1Name ~ operationName ~ input2Name ~ delays => BinaryGate(name,input1Name,input2Name,delays,operationName)
   }
   
   //i.e. NOT
-  def unaryGate:Parser[UnaryGate] = stringLit ~ "=" ~ unaryOperation ~ stringLit ~ singleDelaySpec ^^ {
+  def unaryGate:Parser[UnaryGate] = ident ~ "=" ~ unaryOperation ~ ident ~ singleDelaySpec ^^ {
     case name ~ "=" ~ operationName ~ inputName ~ delaySpec => UnaryGate(name,inputName,UnaryDelaySpec(delaySpec),operationName)
   }
 
@@ -39,9 +39,24 @@ object Parser extends StandardTokenParsers {
   def binaryOperation = "OR"|"AND"|"NAND"|"NOR"
 
   def unaryOperation = "NOT"
+
+  def parse(s:String):Option[Circuit] = {
+    val tokens = new lexical.Scanner(s)
+    circuit(tokens) match {
+      case Success(circuit,_) => Some(circuit)
+      case _ => {
+	None
+      }
+    }
+  }
 }
 
-case class Circuit(val inputNames:List[String],val gates:List[Gate], val outputName:String)
+case class Circuit(val inputNames:List[String],val gates:List[Gate], val outputName:String) extends Sensitizer{
+  val outputGate:Gate = gates.find(_.name == outputName) match{
+    case Some(gate) => gate
+    case _ => throw InputError("Output gate \""+outputName+"\" wasn't specified")
+  }
+}
 
 trait Gate{
   val name:String
