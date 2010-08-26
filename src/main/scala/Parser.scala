@@ -51,28 +51,3 @@ object Parser extends StandardTokenParsers {
   }
 }
 
-case class Circuit(val inputNames:List[String],val gates:List[Gate], val outputName:String) extends Sensitizer{
-  val outputGate:Gate = gates.find(_.name == outputName) match{
-    case Some(gate) => gate
-    case _ => throw InputError("Output gate \""+outputName+"\" wasn't specified")
-  }
-}
-
-trait Gate{
-  val name:String
-  val delaySpec:DelaySpec
-}
-
-trait Operation{
-  val operationName:String
-}
-
-case class BinaryGate(val name: String, val input1Name:String, val input2Name: String, val delaySpec:BinaryDelaySpec, val operationName:String) extends Gate with Operation
-
-case class UnaryGate(val name: String, val inputName:String, val delaySpec:UnaryDelaySpec, val operationName:String) extends Gate with Operation
-
-trait DelaySpec
-
-case class BinaryDelaySpec(val input1Delays:(Int,Int), val input2Delays:(Int,Int)) extends DelaySpec
-
-case class UnaryDelaySpec(val inputDelays:(Int,Int)) extends DelaySpec

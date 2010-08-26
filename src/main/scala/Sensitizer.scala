@@ -1,25 +1,35 @@
 package main
 
 trait Sensitizer {
+  type SensitizedWire = (String,Option[Boolean]) // wirename,non-controllinv value
+  type CheckedSensitizedWire = (SensitizedWire,Boolean) // sensitized wire, is checked
+  type State = Map[SensitizedWire,Boolean]  // wire -> is justified
+
   val inputNames:List[String]
   val gates:List[Gate]
   val outputGate:Gate
   
-  lazy val routes:List[Route] = {
-    def getRoutesFrom(id:String):List[List[String]] ={      
-      if (inputNames.contains(id))
-	List(Nil:+id)
-      else {
-	gates.find(_.name == id) match{
-	  case Some(UnaryGate(name,inputName,_,_)) => getRoutesFrom(inputName).map(_ :+ name)
-	  case Some(BinaryGate(name,input1Name,input2Name,_,_)) => getRoutesFrom(input1Name).map(_ :+ name) ++ getRoutesFrom(input2Name).map(_ :+ name)
-	  case None => throw InputError("gate \""+id+"\" not found")
-	}
+  case class Route(val number:Int,val route:List[String], val isValid:Boolean)
+
+
+  def sensitize(route:List[String]):State = {
+    val binaryGatesInRoute:List[BinaryGate] = route.map(gateName => gates.find(_.name == gateName)).flatten.flatMap({
+      case binaryGate:BinaryGate => Some(binaryGate)
+      case _ => None
+    })      
+    //get gates' inputs that are not in the route, i.e. to sensitize later
+    val inputsToSentitize:List[String] = binaryGatesInRoute.map(gate => {
+      if (route.contains(gate.input1Name))
+	gate.input2Name
+      else{
+	gate.input1Name
       }
-    }  
-
-    getRoutesFrom(outputGate.name).zipWithIndex.map(routeWithIndex => Route(routeWithIndex._2,routeWithIndex._1))
-  }
-
-  case class Route(val number:Int,val route:List[String])
+    })	
+    
+    binaryGatesInRoute.zip(inputsToSentitize).map(zippedGateWithInputs => {
+      val sensitizedWire:SensitizedWire = (zippedGateWithInputs._2,zippedGateWithInputs._1.propagationValue)
+	val justifiedWire:(SensitizedWire,Boolean) = (sensitizedWire,false)
+	  justifiedWire
+    }).toMap
+  } //end sensitize
 }
