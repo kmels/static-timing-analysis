@@ -1,8 +1,0 @@
-Circuit.scala
-Gate.scala
-InputError.scala
-Justifier.scala
-Main.scala
-Parser.scala
-prueba.txt
-Sensitizer.scala
