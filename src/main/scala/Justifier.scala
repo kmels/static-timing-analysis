@@ -3,25 +3,23 @@ package main
 trait Justifier extends Sensitizer {
   implicit def stateToSet(state:State):Set[State] = Set(state)
 
-  def nextStates(state:State):Set[State] = { p(state)}
-
-  def p(state:State):Set[State] = 
+  def justify(state:State):Set[State] = 
     state.find(checkedWire => checkedWire._2 == false) match { //find the first which hasn't been checked yet 
       case None => {	
 	Set() //empty set
       }
-      case Some(nonCheckedWire) => {
+      case Some(nonCheckedWire) => {	
 	val wireName = nonCheckedWire._1._1
 	val wireValue:Option[Boolean] = nonCheckedWire._1._2
+
 	if (inputNames.contains(wireName)){
 	  state.updated((wireName,wireValue),true) //mark the wire as checked
 	}else{
-	  //println("Gates: "+gates)
 	  val gate:Gate = gates.find(_.name == nonCheckedWire._1._1) match {
 	    case Some(gate) => gate
 	    case _ => {
 	      println("Could not found gate for "+nonCheckedWire._1._1)
-	      throw new Exception()
+	      throw new Exception("Could not found gate for "+nonCheckedWire._1._1)
 	    }
 	  }
 	  val gateValue:Option[Boolean] = nonCheckedWire._1._2
@@ -36,7 +34,6 @@ trait Justifier extends Sensitizer {
 
 		  binaryGate.operationName match{
 		    case "AND" => {			  
-//		      println("AND!")
 		      gateOutputValue match{
 			case true => //gate AND, with output 1. 
 			  state.updated(sensitizedGate,true) + (
@@ -61,7 +58,6 @@ trait Justifier extends Sensitizer {
 		      }
 		    }
 		    case "OR" => {
-//		      println("OR!")
 		      gateOutputValue match{
 			case true => {
 			  val state1:State = state.updated(sensitizedGate,true) + (			    

@@ -20,33 +20,18 @@ case class Circuit(val inputNames:List[String],val gates:List[Gate], val outputN
       }
     }
     
-    val routes = getRoutesFrom(outputGate.name)
+    val paths = getRoutesFrom(outputGate.name)
+    val routes:List[Route] = paths.zipWithIndex.map(
+      routeWithIndex => 
+	Route(
+	  routeWithIndex._2,
+	  routeWithIndex._1,
+	  isTruthful(routeWithIndex._1)
+	)
+      )
 
-    val ruta = routes(1)
-    //    println("Ruta 1: "+ruta)
-    //   println("Ruta es valida: "+isValid(ruta))
-    //println("RUTA 0: "+isValid(routes(0)))
-    
-
-    routes.zipWithIndex.foreach(
-      r => {
-	val index = r._2
-	val route = r._1
-	println("RUTA "+index+" valida: "+isValid(route)+" \n\tRUTA: "+route+"\n\n")
-      }
-    )
-    /*    val merasMeras:List[Route] = routes.zipWithIndex.map(
-     routeWithIndex => 
-     Route(
-     routeWithIndex._2,
-     routeWithIndex._1,
-     isValid(routeWithIndex._1)
-     )
-     )*/
-
-    //println("Meras meras: "+merasMeras.mkString("\n,"))
-    //merasMeras
-    List()
+    println("Meras meras: "+routes.mkString("\n,"))
+    routes
   }
 
 
@@ -57,7 +42,7 @@ case class Circuit(val inputNames:List[String],val gates:List[Gate], val outputN
    * @param route the list of gates in order
    * @returns true if the route is valid within this circuit
    */
-  private def isValid(route:List[String]):Boolean = {
+  private def isTruthful(route:List[String]):Boolean = {
     import collection.mutable.ListBuffer
     val uncheckedStates = ListBuffer(sensitize(route)) //initial states is the sensitized values for this route
     val justifiedStates = ListBuffer[State]()
@@ -70,25 +55,30 @@ case class Circuit(val inputNames:List[String],val gates:List[Gate], val outputN
     /**
      * @returns true if there exists some incoherent value
      */ 
-    def isInvalidState(state:State):Boolean = {
+    def isInvalidState(route:List[String],state:State):Boolean = {
       val allWires:List[String] = state.keysIterator.toList.map(_._1)
       //there has to be only one value for a wire
-      allWires.diff(allWires.toSet.toSeq) != Nil //if there's at least one repeated
+      val hasIncoherences = allWires.diff(allWires.toSet.toSeq) != Nil //if there's at least one repeated
+      //if it sets a value for a wire in the route (path), it's invalid too
+      val setsValueForWireInRoute = allWires.diff(route) != Nil
+      hasIncoherences | setsValueForWireInRoute
     }
     
     while (!uncheckedStates.isEmpty){ //while there is no state left to check
-      val newStates = nextStates(uncheckedStates.remove(0)) //get next states
+      val removido = uncheckedStates.remove(0)
+
+    //  println("Removido: "+removido)
+      val newStates = justify(removido) //get next states
       
-      val (invalidStates,validStates) = newStates.partition( s => isInvalidState(s) )
+      val (invalidStates,validStates) = newStates.partition( s => isInvalidState(route,s) )
       //we don't care about invalid states anymore, but there could be one final state (or more) within the valid states
+
       val (finalStates,justValidStates) = validStates.partition(isFinalState(_))
 
-      println("encontro "+ finalStates.size +" estados finales")
       justifiedStates ++= finalStates
       uncheckedStates ++= justValidStates
     }
     
-    println("en total: "+justifiedStates.size+" estados finales")
     justifiedStates.size > 0
   }
 }
