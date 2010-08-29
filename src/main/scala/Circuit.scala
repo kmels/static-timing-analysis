@@ -6,6 +6,10 @@ case class Circuit(val inputNames:List[String],val gates:List[Gate], val outputN
     case _ => throw InputError("Output gate \""+outputName+"\" wasn't specified")
   }
 
+  /*
+   * Computes the routes for this circuit
+   *
+   */
   val routes:List[Route] = {    
     def getRoutesFrom(id:String):List[List[String]] ={      
       if (inputNames.contains(id))
@@ -20,23 +24,16 @@ case class Circuit(val inputNames:List[String],val gates:List[Gate], val outputN
     }
     
     val paths = getRoutesFrom(outputGate.name)
-    val routes:List[Route] = paths.zipWithIndex.map(
+    paths.zipWithIndex.map(
       routeWithIndex => 
 	Route(
 	  routeWithIndex._2,
 	  routeWithIndex._1,
 	  isTruthful(routeWithIndex._1)
-	  )
+	)
     )
-
-    println("Meras meras: "+routes.mkString("\n,"))
-
-    isTruthful(paths(2))
-    routes
   }
-
-
-
+  
   /**
    * Checks if a route is valid
    * 

@@ -12,9 +12,9 @@ trait Justifier extends Sensitizer {
 	val wireName = nonCheckedWire._1._1
 	val wireValue:Option[Boolean] = nonCheckedWire._1._2
 
-	if (inputNames.contains(wireName)){
+	if (inputNames.contains(wireName))
 	  state.updated((wireName,wireValue),true) //mark the wire as checked
-	}else{
+	else{
 	  val gate:Gate = gates.find(_.name == nonCheckedWire._1._1) match {
 	    case Some(gate) => gate
 	    case _ => {
@@ -42,16 +42,13 @@ trait Justifier extends Sensitizer {
 			  state.updated(sensitizedGate,true) + (
 			    input1ShouldBe(true),input2ShouldBe(true)
 			  )
-			case _ => { //gate AND, with output 0,
+			case _ => //gate AND, with output 0,
 			  atLeastOneInputMustBeFalse(binaryGate,route,sensitizedGate,state)
-			}
 		      }
 		    }
 		    case "OR" => 
 		      gateOutputValue match{
-			case true => {
-			  atLeastOneInputMustBeTrue(binaryGate,route,sensitizedGate,state)
-			}
+			case true => atLeastOneInputMustBeTrue(binaryGate,route,sensitizedGate,state)
 			case _ => //OR output is 0, both inputs must be 0 as well
 			  state.updated(sensitizedGate,true) + (
 			    input1ShouldBe(false),input2ShouldBe(false)
@@ -81,9 +78,7 @@ trait Justifier extends Sensitizer {
 		      }//END NAND
 		  }
 		} //end if wire value is Some(_)
-		case _ => {
-		  state.updated(nonCheckedWire._1,true) //go to the next state, it's ok
-		}
+		case _ => state.updated(nonCheckedWire._1,true) //go to the next state, it's ok
 	      }	      
 	    }
 	    case unaryGate:UnaryGate => unaryGate.operationName match {
@@ -109,10 +104,10 @@ trait Justifier extends Sensitizer {
     val input2ShouldBe: (Boolean) => State = value => Map((binaryGate.input2Name,Some(value))->false)
 
     //return the three possible states
-    if (route.contains(binaryGate.input1Name)){
+    if (sensitizedWireSetsValueInRoute(route,binaryGate.input1Name)){
       state.updated(sensitizedGate,true) ++ input2ShouldBe(false)
     }else 
-      if (route.contains(binaryGate.input2Name)){
+      if (sensitizedWireSetsValueInRoute(route,binaryGate.input2Name)){
 	state.updated(sensitizedGate,true) ++ input1ShouldBe(false)
       }
       else{
@@ -135,7 +130,6 @@ trait Justifier extends Sensitizer {
 	state.updated(sensitizedGate,true) ++ input1ShouldBe(true)
       }
       else{
-	println("Ni miesh")
 	val state1:State = state.updated(sensitizedGate,true) ++ input1ShouldBe(false) ++ input2ShouldBe(true)
 	val state2:State = state.updated(sensitizedGate,true) ++ input1ShouldBe(true) ++ input2ShouldBe(false)
 	val state3:State = state.updated(sensitizedGate,true) ++ input1ShouldBe(true) ++ input2ShouldBe(true)
@@ -146,25 +140,13 @@ trait Justifier extends Sensitizer {
   private def sensitizedWireSetsValueInRoute(route:List[String],inputName:String):Boolean = 
     if (route.contains(inputName))
       true
-    else{
-      println(route)
-
-      println("input name: "+inputName)
-
-      println(gates.find(_.name == inputName))
-
+    else
       gates.find(_.name == inputName) match{
 	case Some(gate) => gate match{
-	  case unaryGate:UnaryGate => {
-	    println (unaryGate)
+	  case unaryGate:UnaryGate =>
 	    sensitizedWireSetsValueInRoute(route,unaryGate.inputName)
-	  }
-	  case _ => {
-	    println("false")
-	      false
-	  }	  
+	  case _ => false
 	}
 	case _ => false
-      }
-    }// end else
+      }//end match
 }
