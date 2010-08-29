@@ -6,7 +6,6 @@ case class Circuit(val inputNames:List[String],val gates:List[Gate], val outputN
     case _ => throw InputError("Output gate \""+outputName+"\" wasn't specified")
   }
 
-
   val routes:List[Route] = {    
     def getRoutesFrom(id:String):List[List[String]] ={      
       if (inputNames.contains(id))
@@ -27,10 +26,12 @@ case class Circuit(val inputNames:List[String],val gates:List[Gate], val outputN
 	  routeWithIndex._2,
 	  routeWithIndex._1,
 	  isTruthful(routeWithIndex._1)
-	)
-      )
+	  )
+    )
 
     println("Meras meras: "+routes.mkString("\n,"))
+
+    isTruthful(paths(2))
     routes
   }
 
@@ -53,28 +54,25 @@ case class Circuit(val inputNames:List[String],val gates:List[Gate], val outputN
     def isFinalState(state:State):Boolean = state.valuesIterator.forall(_ == true)
     
     /**
-     * @returns true if there exists some incoherent value
+     * @returns true if there exists some incoherent value or there exists a wire in the route whose value is set
      */ 
-    def isInvalidState(route:List[String],state:State):Boolean = {
+    def isInvalidState(path:List[String],state:State):Boolean = {
       val allWires:List[String] = state.keysIterator.toList.map(_._1)
       //there has to be only one value for a wire
       val hasIncoherences = allWires.diff(allWires.toSet.toSeq) != Nil //if there's at least one repeated
-      //if it sets a value for a wire in the route (path), it's invalid too
-      val setsValueForWireInRoute = allWires.diff(route) != Nil
-      hasIncoherences | setsValueForWireInRoute
+      //if it sets a value for a wire in the route (path), it's invalid too, i.e. at least one sensitized wire sets value for a wire in the path
+      val valueSetInPath = allWires.filter(route.contains(_)).size >0
+      
+      hasIncoherences | valueSetInPath
     }
     
     while (!uncheckedStates.isEmpty){ //while there is no state left to check
-      val removido = uncheckedStates.remove(0)
-
-    //  println("Removido: "+removido)
-      val newStates = justify(removido) //get next states
+      val newStates = justify(route,uncheckedStates.remove(0)) //get next states
       
       val (invalidStates,validStates) = newStates.partition( s => isInvalidState(route,s) )
       //we don't care about invalid states anymore, but there could be one final state (or more) within the valid states
 
       val (finalStates,justValidStates) = validStates.partition(isFinalState(_))
-
       justifiedStates ++= finalStates
       uncheckedStates ++= justValidStates
     }

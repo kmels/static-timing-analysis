@@ -11,7 +11,6 @@ trait Sensitizer {
   
   case class Route(val number:Int,val route:List[String], val isValid:Boolean)
 
-
   def sensitize(route:List[String]):State = {
     val binaryGatesInRoute:List[BinaryGate] = route.map(gateName => gates.find(_.name == gateName)).flatten.flatMap({
       case binaryGate:BinaryGate => Some(binaryGate)

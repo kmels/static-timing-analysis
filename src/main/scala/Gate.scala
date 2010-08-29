@@ -14,6 +14,7 @@ trait Operation{
     case "OR" => Some(false)
     case "AND" => Some(true)
     case "NAND" => Some(true)    
+    case "NOR" => Some(false)
     case "NOT" => None
   }
 }

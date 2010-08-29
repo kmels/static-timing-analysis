@@ -1,7 +1,7 @@
 package main
 
 object Main extends Application{
-  val pathToFile = "/home/kmels/tmp/ie2005"
+  val pathToFile = "/home/kmels/tmp/ie2005_3"
 
   try {
     val c:Option[Circuit] = Parser.parse(io.Source.fromFile(pathToFile).mkString)

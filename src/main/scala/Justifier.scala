@@ -3,7 +3,7 @@ package main
 trait Justifier extends Sensitizer {
   implicit def stateToSet(state:State):Set[State] = Set(state)
 
-  def justify(state:State):Set[State] = 
+  def justify(route:List[String],state:State):Set[State] = 
     state.find(checkedWire => checkedWire._2 == false) match { //find the first which hasn't been checked yet 
       case None => {	
 	Set() //empty set
@@ -28,7 +28,10 @@ trait Justifier extends Sensitizer {
 	    case binaryGate:BinaryGate => {
 	      wireValue match{
 		case Some(gateOutputValue) => {
-		  val input1ShouldBe: (Boolean) => CheckedSensitizedWire = value => ((binaryGate.input1Name,Some(value)),false)
+		  val input1ShouldBe: (Boolean) => CheckedSensitizedWire = value => {
+		    ((binaryGate.input1Name,Some(value)),false)
+		  }
+
 		  val input2ShouldBe: (Boolean) => CheckedSensitizedWire = value => ((binaryGate.input2Name,Some(value)),false)
 		  val sensitizedGate:SensitizedWire = nonCheckedWire._1
 
@@ -40,47 +43,42 @@ trait Justifier extends Sensitizer {
 			    input1ShouldBe(true),input2ShouldBe(true)
 			  )
 			case _ => { //gate AND, with output 0,
-			  val state1:State = state.updated(sensitizedGate,true) + (			    
-			    input1ShouldBe(false),input2ShouldBe(true)
-			  )
-
-			  val state2:State = state.updated(sensitizedGate,true) + (			    
-			    input1ShouldBe(true),input2ShouldBe(false)
-			  )
-
-			  val state3:State = state.updated(sensitizedGate,true) + (			    
-			    input1ShouldBe(false),input2ShouldBe(false)
-			  )
-
-			  //return the three possible states
-			  Set(state1,state2,state3)
+			  atLeastOneInputMustBeFalse(binaryGate,route,sensitizedGate,state)
 			}
 		      }
 		    }
-		    case "OR" => {
+		    case "OR" => 
 		      gateOutputValue match{
 			case true => {
-			  val state1:State = state.updated(sensitizedGate,true) + (			    
-			    input1ShouldBe(false),input2ShouldBe(true)
-			  )
-
-			  val state2:State = state.updated(sensitizedGate,true) + (			    
-			    input1ShouldBe(true),input2ShouldBe(false)
-			  )
-
-			  val state3:State = state.updated(sensitizedGate,true) + (			    
-			    input1ShouldBe(true),input2ShouldBe(true)
-			  )
-
-			  //return the three possible states
-			  Set(state1,state2,state3)
+			  atLeastOneInputMustBeTrue(binaryGate,route,sensitizedGate,state)
 			}
 			case _ => //OR output is 0, both inputs must be 0 as well
 			  state.updated(sensitizedGate,true) + (
 			    input1ShouldBe(false),input2ShouldBe(false)
 			  )			
-		      }
-		    }
+		      }//end OR
+		    case "NOR" => 
+		      gateOutputValue match{
+			case false =>{
+			  //NOR output is 0, at least one input must be true
+			  atLeastOneInputMustBeTrue(binaryGate,route,sensitizedGate,state)
+			}
+			case _ => //NOR output is 1, both inputs must be 0
+			  state.updated(sensitizedGate,true) + (
+			    input1ShouldBe(false),input2ShouldBe(false)
+			  )
+		      } //END NOR
+		    case "NAND" => 
+		      gateOutputValue match{
+			case true => {
+			  atLeastOneInputMustBeFalse(binaryGate,route,sensitizedGate,state)
+			}
+			case _ => { //NAND output is 0, both inputs must be 1
+			  state.updated(sensitizedGate,true) + (
+			    input1ShouldBe(true),input2ShouldBe(true)
+			  )
+			}
+		      }//END NAND
 		  }
 		} //end if wire value is Some(_)
 		case _ => {
@@ -105,4 +103,68 @@ trait Justifier extends Sensitizer {
 	
       } // end Some(noncheckedwire)
     } //end next states
+
+  private def atLeastOneInputMustBeFalse(binaryGate:BinaryGate,route:List[String],sensitizedGate:SensitizedWire,state:State):Set[State] ={
+    val input1ShouldBe: (Boolean) => State = value => Map((binaryGate.input1Name,Some(value))->false)
+    val input2ShouldBe: (Boolean) => State = value => Map((binaryGate.input2Name,Some(value))->false)
+
+    //return the three possible states
+    if (route.contains(binaryGate.input1Name)){
+      state.updated(sensitizedGate,true) ++ input2ShouldBe(false)
+    }else 
+      if (route.contains(binaryGate.input2Name)){
+	state.updated(sensitizedGate,true) ++ input1ShouldBe(false)
+      }
+      else{
+	val state1:State = state.updated(sensitizedGate,true) ++ input1ShouldBe(false) ++ input2ShouldBe(true)
+	val state2:State = state.updated(sensitizedGate,true) ++ input1ShouldBe(true) ++ input2ShouldBe(false)
+	val state3:State = state.updated(sensitizedGate,true) ++ input1ShouldBe(false) ++ input2ShouldBe(false)
+	Set(state1,state2,state3)
+      }
+  }
+
+  private def atLeastOneInputMustBeTrue(binaryGate:BinaryGate,route:List[String],sensitizedGate:SensitizedWire,state:State):Set[State] ={
+    val input1ShouldBe: (Boolean) => State = value => Map((binaryGate.input1Name,Some(value))->false)
+    val input2ShouldBe: (Boolean) => State = value => Map((binaryGate.input2Name,Some(value))->false)
+
+    //return the three possible states
+    if (sensitizedWireSetsValueInRoute(route,binaryGate.input1Name)){
+      state.updated(sensitizedGate,true) ++ input2ShouldBe(true)
+    }else 
+      if (sensitizedWireSetsValueInRoute(route,binaryGate.input2Name)){
+	state.updated(sensitizedGate,true) ++ input1ShouldBe(true)
+      }
+      else{
+	println("Ni miesh")
+	val state1:State = state.updated(sensitizedGate,true) ++ input1ShouldBe(false) ++ input2ShouldBe(true)
+	val state2:State = state.updated(sensitizedGate,true) ++ input1ShouldBe(true) ++ input2ShouldBe(false)
+	val state3:State = state.updated(sensitizedGate,true) ++ input1ShouldBe(true) ++ input2ShouldBe(true)
+	Set(state1,state2,state3)
+      }
+  }
+
+  private def sensitizedWireSetsValueInRoute(route:List[String],inputName:String):Boolean = 
+    if (route.contains(inputName))
+      true
+    else{
+      println(route)
+
+      println("input name: "+inputName)
+
+      println(gates.find(_.name == inputName))
+
+      gates.find(_.name == inputName) match{
+	case Some(gate) => gate match{
+	  case unaryGate:UnaryGate => {
+	    println (unaryGate)
+	    sensitizedWireSetsValueInRoute(route,unaryGate.inputName)
+	  }
+	  case _ => {
+	    println("false")
+	      false
+	  }	  
+	}
+	case _ => false
+      }
+    }// end else
 }
