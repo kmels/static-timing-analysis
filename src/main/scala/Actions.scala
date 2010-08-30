@@ -1,12 +1,60 @@
 package ed.gui
 
-import main.Parser
+import main._
 import scala.swing.Action
+import scala.util.parsing.combinator.syntactical.StandardTokenParsers
 import java.awt.event.{ KeyEvent, InputEvent }
 import javax.swing.{ KeyStroke, ImageIcon }
 
-object Creador extends main.Parser {
-	
+object Creador extends StandardTokenParsers {
+  lexical.reserved ++= Set("inputs","output","OR","AND","NAND","NOR","NOT","input","output")
+  lexical.delimiters ++= Set("=","/",",")
+
+  def circuit:Parser[GraphicalCircuit] = inputs ~ rep1(gate) ~ output ^^ {
+    case inputNames ~ gates ~ outputName => new GraphicalCircuit(inputNames,gates,outputName)
+  }
+
+  def inputs:Parser[List[GraphicalInput]] = "inputs" ~> "="~> rep1sep(input,",") 
+  
+  def input:Parser[GraphicalInput] = ident ~ "-" ~ numericLit ~ "," ~ numericLit ^^ {
+	case name ~ "-" ~ posX ~ "-" ~ posY => new GraphicalInput(name, posX.toInt, posY.toInt)
+  }
+
+  def output:Parser[String] = "output" ~> "=" ~> ident
+
+  def gate:Parser[Gate] = binaryGate | unaryGate
+
+  //e.g. AND,OR,NAND,NOR
+  def binaryGate:Parser[GraphicalBinaryGate] = ident ~ "=" ~ ident ~ binaryOperation ~ ident ~ delaySpecs ~ numericLit ~ "," ~ numericLit ^^ {
+    case name ~ "=" ~ input1Name ~ operationName ~ input2Name ~ delays ~ posX ~ "," ~ posY => new GraphicalBinaryGate(name,input1Name,input2Name,delays,operationName, posX.toInt, posY.toInt)
+  }
+  
+  //i.e. NOT
+  def unaryGate:Parser[GraphicalUnaryGate] = ident ~ "=" ~ unaryOperation ~ ident ~ singleDelaySpec ~ numericLit ~ "," ~ numericLit ^^ {
+    case name ~ "=" ~ operationName ~ inputName ~ delaySpec ~ posX ~ "," ~ posY => new GraphicalUnaryGate(name,inputName,UnaryDelaySpec(delaySpec),operationName, posX.toInt, posY.toInt)
+  }
+
+  //delay specs for 
+  def delaySpecs:Parser[BinaryDelaySpec] = singleDelaySpec ~ singleDelaySpec ^^ {
+    case input1DelaySpec ~ input2DelaySpec => BinaryDelaySpec(input1DelaySpec,input2DelaySpec)
+  }
+
+  //(Rising,Falling) delays
+  def singleDelaySpec:Parser[(Int,Int)] = numericLit ~ "/" ~ numericLit ^^ { 
+    case risingDelay ~ "/" ~ fallingDelay => (risingDelay.toInt,fallingDelay.toInt)
+  }
+
+  def binaryOperation = "OR"|"AND"|"NAND"|"NOR"
+
+  def unaryOperation = "NOT"
+
+  def parse(s:String):Option[GraphicalCircuit] = {
+    val tokens = new lexical.Scanner(s)
+    circuit(tokens) match {
+      case Success(circuit,_) => Some(circuit)
+      case _ => None
+    }
+  }
 }
 
 object accionAbrir extends Action("Abrir") {
