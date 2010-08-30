@@ -64,14 +64,13 @@ object barraMenu extends MenuBar {
 
 	val archivo = new Menu("Archivo") {
 		val nuevo = new MenuItem( new Action("Nuevo") {
-		mnemonic = KeyEvent.VK_N
-		accelerator = Some(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK))
-		icon = new ImageIcon("./data/images/app/document-new.png")
-		toolTip = "Crea un documento nuevo."
-		def apply() {
-			//Interfaz.top.pnlCentral.pnlPrincipal. pages += new TabbedPane.Page("Sin titulo", new PanelCentral())
-			panelCentral.addPage
-		}
+			mnemonic = KeyEvent.VK_N
+			accelerator = Some(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK))
+			icon = new ImageIcon("./data/images/app/document-new.png")
+			toolTip = "Crea un documento nuevo."
+			def apply() {
+				panelCentral.addPage
+			}
 		})
 		val abrir = new MenuItem(accionAbrir) 
 		val guardar = new MenuItem(accionGuardar)
@@ -142,10 +141,10 @@ object barraMenu extends MenuBar {
 	val herramientas = new Menu("Herramientas") {
 		contents += new MenuItem("Mostrar rutas")
 		contents += new MenuItem("Sensibilizar y justificar") {
-			val pathToFile = "/home/kmels/tmp/ie2005_3"
-			val c:Option[Circuit] = Parser.parse(io.Source.fromFile(pathToFile).mkString)
-			println(c)
-			println(c.get.routes)
+			//val pathToFile = "/home/kmels/tmp/ie2005_3"
+			//val c:Option[Circuit] = Parser.parse(io.Source.fromFile(pathToFile).mkString)
+			//println(c)
+			//println(c.get.routes)
 		}
 	}
 	val ayuda = new Menu("Ayuda") {

@@ -1,14 +1,14 @@
 package ed.gui
 
 import main._
-import scala.swing.Action
+import scala.swing._
 import scala.util.parsing.combinator.syntactical.StandardTokenParsers
 import java.awt.event.{ KeyEvent, InputEvent }
 import javax.swing.{ KeyStroke, ImageIcon }
 
 object Creador extends StandardTokenParsers {
   lexical.reserved ++= Set("inputs","output","OR","AND","NAND","NOR","NOT","input","output")
-  lexical.delimiters ++= Set("=","/",",")
+  lexical.delimiters ++= Set("=","/",",", "-")
 
   def circuit:Parser[GraphicalCircuit] = inputs ~ rep1(gate) ~ output ^^ {
     case inputNames ~ gates ~ outputName => new GraphicalCircuit(inputNames,gates,outputName)
@@ -16,7 +16,7 @@ object Creador extends StandardTokenParsers {
 
   def inputs:Parser[List[GraphicalInput]] = "inputs" ~> "="~> rep1sep(input,",") 
   
-  def input:Parser[GraphicalInput] = ident ~ "-" ~ numericLit ~ "," ~ numericLit ^^ {
+  def input:Parser[GraphicalInput] = ident ~ "-" ~ numericLit ~ "-" ~ numericLit ^^ {
 	case name ~ "-" ~ posX ~ "-" ~ posY => new GraphicalInput(name, posX.toInt, posY.toInt)
   }
 
@@ -25,13 +25,13 @@ object Creador extends StandardTokenParsers {
   def gate:Parser[Gate] = binaryGate | unaryGate
 
   //e.g. AND,OR,NAND,NOR
-  def binaryGate:Parser[GraphicalBinaryGate] = ident ~ "=" ~ ident ~ binaryOperation ~ ident ~ delaySpecs ~ numericLit ~ "," ~ numericLit ^^ {
-    case name ~ "=" ~ input1Name ~ operationName ~ input2Name ~ delays ~ posX ~ "," ~ posY => new GraphicalBinaryGate(name,input1Name,input2Name,delays,operationName, posX.toInt, posY.toInt)
+  def binaryGate:Parser[GraphicalBinaryGate] = ident ~ "=" ~ ident ~ binaryOperation ~ ident ~ delaySpecs ~ numericLit ~ "-" ~ numericLit ^^ {
+    case name ~ "=" ~ input1Name ~ operationName ~ input2Name ~ delays ~ posX ~ "-" ~ posY => new GraphicalBinaryGate(name,input1Name,input2Name,delays,operationName, posX.toInt, posY.toInt)
   }
   
   //i.e. NOT
-  def unaryGate:Parser[GraphicalUnaryGate] = ident ~ "=" ~ unaryOperation ~ ident ~ singleDelaySpec ~ numericLit ~ "," ~ numericLit ^^ {
-    case name ~ "=" ~ operationName ~ inputName ~ delaySpec ~ posX ~ "," ~ posY => new GraphicalUnaryGate(name,inputName,UnaryDelaySpec(delaySpec),operationName, posX.toInt, posY.toInt)
+  def unaryGate:Parser[GraphicalUnaryGate] = ident ~ "=" ~ unaryOperation ~ ident ~ singleDelaySpec ~ numericLit ~ "-" ~ numericLit ^^ {
+    case name ~ "=" ~ operationName ~ inputName ~ delaySpec ~ posX ~ "-" ~ posY => new GraphicalUnaryGate(name,inputName,UnaryDelaySpec(delaySpec),operationName, posX.toInt, posY.toInt)
   }
 
   //delay specs for 
@@ -52,7 +52,7 @@ object Creador extends StandardTokenParsers {
     val tokens = new lexical.Scanner(s)
     circuit(tokens) match {
       case Success(circuit,_) => Some(circuit)
-      case _ => None
+      case f => {println(f); None}
     }
   }
 }
@@ -63,8 +63,22 @@ object accionAbrir extends Action("Abrir") {
 	icon = new ImageIcon("./data/images/app/document-open.png")
 	toolTip = "Abre un documento existente."
 	def apply() {
-		//val fc = FileChooser
-		println("abrir")
+		
+		// Abrir el archivo
+		val archivo = panelCentral.fc.showOpenDialog(panelCentral)
+		// Revisar decision
+		if(archivo == FileChooser.Result.Approve) {
+			// Crear arbol del circuito
+			val c:Option[GraphicalCircuit] = Creador.parse(io.Source.fromFile(panelCentral.fc.selectedFile).mkString)
+			
+			if(!c.isDefined) {
+				Dialog.showMessage(null, "El archivo especificado no contiene un circuito valido.", "Error", Dialog.Message.Error)
+				
+			} else {
+				println(c.get)
+				
+			}
+		}
 	}
 }
 object accionGuardar extends Action("Guardar") {

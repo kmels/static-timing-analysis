@@ -10,7 +10,8 @@ object panelCentral extends TabbedPane() {
 	var lineasHorizontales : Boolean = false
 	var lineasVerticales : Boolean = false
 	var counter = 0
-	
+	val fc = new FileChooser()
+
 	def addPage = {
 		val p = new TabbedPane.Page("Sin titulo ("+counter+")", new ScrollPane(new PanelPrincipal()))	
 		counter += 1
