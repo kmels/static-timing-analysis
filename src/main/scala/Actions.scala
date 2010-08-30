@@ -1,17 +1,9 @@
+package ed.gui
+
 import scala.swing.Action
 import java.awt.event.{ KeyEvent, InputEvent }
 import javax.swing.{ KeyStroke, ImageIcon }
 
-
-object accionNuevo extends Action("Nuevo") {
-	mnemonic = KeyEvent.VK_N
-	accelerator = Some(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK))
-	icon = new ImageIcon("./data/images/app/document-new.png")
-	toolTip = "Crea un documento nuevo."
-	def apply() {
-		println("nuevo")
-	}
-} 
 object accionAbrir extends Action("Abrir") {
 	mnemonic = KeyEvent.VK_O
 	accelerator = Some(KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK))

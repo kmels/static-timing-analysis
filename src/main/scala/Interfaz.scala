@@ -1,4 +1,6 @@
+package ed.gui
 
+import main._
 import scala.swing._
 import scala.swing.event._
 import java.awt.Color
@@ -22,13 +24,15 @@ object Interfaz  extends SimpleSwingApplication {
 			// Agregar barra con botones
 			contents += new BoxPanel(Orientation.Vertical) {
 				contents += new Button("Seleccionar")
+				contents += new Separator()
 				contents += new Button("Agregar entrada")
+				contents += new Separator()
 				contents += new Button("Not")
 				contents += new Button("Or")
 				contents += new Button("And")
 				contents += new Button("Nor")
 				contents += new Button("NAnd")
-				//contents += new Separator()
+				contents += new Separator()
 				contents += new Button("Conexion")
 			}
 			
@@ -137,7 +141,12 @@ object barraMenu extends MenuBar {
 	}
 	val herramientas = new Menu("Herramientas") {
 		contents += new MenuItem("Mostrar rutas")
-		contents += new MenuItem("Sensibilizar y justificar")
+		contents += new MenuItem("Sensibilizar y justificar") {
+			val pathToFile = "/home/kmels/tmp/ie2005_3"
+			val c:Option[Circuit] = Parser.parse(io.Source.fromFile(pathToFile).mkString)
+			println(c)
+			println(c.get.routes)
+		}
 	}
 	val ayuda = new Menu("Ayuda") {
 		contents += new MenuItem("Acercad de Justificator")

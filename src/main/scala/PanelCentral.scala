@@ -1,3 +1,5 @@
+package ed.gui
+
 import swing._
 import scala.swing.Color
 import scala.swing.event._

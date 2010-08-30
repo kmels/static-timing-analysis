@@ -45,7 +45,7 @@ object Parser extends StandardTokenParsers {
     circuit(tokens) match {
       case Success(circuit,_) => Some(circuit)
       case _ => {
-	None
+        None
       }
     }
   }

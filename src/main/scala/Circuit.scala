@@ -10,7 +10,7 @@ case class Circuit(val inputNames:List[String],val gates:List[Gate], val outputN
    * Computes the routes for this circuit
    *
    */
-  val routes:List[Route] = {    
+  val routes:List[Route] = {
     def getRoutesFrom(id:String):List[List[String]] ={      
       if (inputNames.contains(id))
 	List(Nil:+id)
