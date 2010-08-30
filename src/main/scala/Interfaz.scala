@@ -3,37 +3,42 @@ import scala.swing._
 import scala.swing.event._
 import java.awt.Color
 
-object Interfaz  extends SimpleGUIApplication {
+object Interfaz  extends SimpleSwingApplication {
 	
 	def top = new MainFrame {
 		// Configurar ventana
-		title = "Justificator (v0.1)"
+		title = "Justificator (v0.1)";
 		
 		// Agregar menu
-		menuBar = barraMenu
+		menuBar = barraMenu;
 			
 		// Crear y configurar elementos graficos
 		
 		
 		// Agregar elementos a la ventana 
 		contents = new BoxPanel(Orientation.Horizontal) {
+			//contents += barraMenu.archivo
+			
 			// Agregar barra con botones
 			contents += new BoxPanel(Orientation.Vertical) {
+				contents += new Button("Seleccionar")
+				contents += new Button("Agregar entrada")
 				contents += new Button("Not")
 				contents += new Button("Or")
 				contents += new Button("And")
-				contents += new Button("Xor")
-				contents += new Button("XAnd")
+				contents += new Button("Nor")
+				contents += new Button("NAnd")
 				//contents += new Separator()
 				contents += new Button("Conexion")
 			}
+			
 			// Agregar panel principal
-			contents += new Panel() {
-				background = Color.white
-				border = Swing.EmptyBorder(0,3, 0, 0)
-			}
+			contents += panelCentral
+			
+			// Configurar ventana
 			border = Swing.EmptyBorder(1, 15, 5, 30)
 		}
+		
 		
 		// Handlers para los elementos
 		//listenTo()
@@ -41,55 +46,95 @@ object Interfaz  extends SimpleGUIApplication {
 			case ButtonClicked(b) =>
 				None
 		}
+		
+		// Configurar elementos
+		size = new Dimension(800,600)
+		
+		barraMenu.vista .linHor.doClick()
 	}
 }
 
 object barraMenu extends MenuBar {
+	// Crear utilitarios
+	import java.awt.event.{ KeyEvent, InputEvent }
+	import javax.swing.{ KeyStroke, ImageIcon }
+
 	val archivo = new Menu("Archivo") {
-		contents += new Menu("Nuevo") 
-		contents += new Menu("Abrir") 
-		contents += new Menu("Guardar")
-		contents += new Menu("Guardar como...")
-		contents += new Separator()
-		contents += new Menu("Imprimir")
-		contents += new Menu("Exportar") {
-			contents += new Menu("Imagen")
+		val nuevo = new MenuItem( new Action("Nuevo") {
+		mnemonic = KeyEvent.VK_N
+		accelerator = Some(KeyStroke.getKeyStroke(KeyEvent.VK_N, InputEvent.CTRL_DOWN_MASK))
+		icon = new ImageIcon("./data/images/app/document-new.png")
+		toolTip = "Crea un documento nuevo."
+		def apply() {
+			//Interfaz.top.pnlCentral.pnlPrincipal. pages += new TabbedPane.Page("Sin titulo", new PanelCentral())
+			panelCentral.addPage
 		}
-		contents += new Separator()
-		contents += new Menu("Propiedades")
-		contents += new Menu("Cerrar") 
+		})
+		val abrir = new MenuItem(accionAbrir) 
+		val guardar = new MenuItem(accionGuardar)
+		val guardarComo = new MenuItem(accionGuardarComo)
+		val imprimir = new MenuItem("Imprimir")
+		val exportar = new Menu("Exportar") {
+			val imagen = new MenuItem("Imagen") 
+            contents += imagen
+		}
+		val propiedades = new MenuItem("Propiedades")
+		val cerrar = new MenuItem("Cerrar")
+		contents += nuevo
+        contents += abrir
+        contents += guardar
+        contents += guardarComo
+        contents += new Separator()
+        contents += imprimir
+        contents += exportar
+        contents += new Separator()
+        contents += propiedades
+        contents += cerrar
 	}
 	val editar = new Menu("Editar") {
-		contents += new Menu("Deshacer")
-		contents += new Menu("Rehacer")
+		contents += new MenuItem("Deshacer")
+		contents += new MenuItem("Rehacer")
 		contents += new Separator()
-		contents += new Menu("Copiar")
-		contents += new Menu("Cortar")
-		contents += new Menu("Pegar")
+		contents += new MenuItem("Copiar")
+		contents += new MenuItem("Cortar")
+		contents += new MenuItem("Pegar")
+	} 
+	val vista = new Menu("Vista") {
+		val linHor = new CheckMenuItem ("Lineas horizontales")
+		val linVer = new CheckMenuItem ("Lineas verticales")
+		
+        contents += linHor
+        contents += linVer
 	}
 	val componente = new Menu("Componente") {
+		contents += new MenuItem("Insertar entrada")
 		contents += new Menu("Insertar componente") {
-			contents += new Menu("Not")
-			contents += new Menu("Or")
-			contents += new Menu("And")
-			contents += new Menu("Xor")
-			contents += new Menu("Xand")
+			contents += new MenuItem("Not")
+			contents += new MenuItem("Or")
+			contents += new MenuItem("And")
+			contents += new MenuItem("Xor")
+			contents += new MenuItem("Xand")
 		}
 		contents += new Separator()
-		contents += new Menu("Seleccionar componente")
-		contents += new Menu("Seleccionar todos")
+		contents += new MenuItem("Seleccionar componente")
+		contents += new MenuItem("Seleccionar todos")
 		contents += new Separator()
-		contents += new Menu("Eliminar componente")
-		contents += new Menu("Eliminar componente seleccionado")
+		contents += new MenuItem("Eliminar componente")
+		contents += new MenuItem("Eliminar componente seleccionado")
 	}
 	val herramientas = new Menu("Herramientas") {
-		contents += new Menu("Mostrar rutas")
-		contents += new Menu("Sensibilizar y justificar")
+		contents += new MenuItem("Mostrar rutas")
+		contents += new MenuItem("Sensibilizar y justificar")
 	}
 	val ayuda = new Menu("Ayuda") {
-		contents += new Menu("Acercad de Justificator")
+		contents += new MenuItem("Acercad de Justificator")
 	}
 	
 	// Agregar menus a la barra de menus
-	contents ++= List(archivo, editar, componente, herramientas, ayuda)
+	contents += archivo
+	contents += editar
+	contents += vista
+	contents += componente
+	contents += herramientas
+	contents += ayuda
 }
