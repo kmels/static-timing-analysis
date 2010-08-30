@@ -15,11 +15,6 @@ object panelCentral extends TabbedPane() {
 		pages += p
 		selection.page = p
 	}
-	
-	override def repaint() {
-		super.repaint()
-		println("Repaint1")
-	}
 }
 
 trait LineasVerticales extends Panel {
@@ -49,10 +44,5 @@ class PanelPrincipal extends Panel
 		with LineasHorizontales with LineasVerticales {
 	background = Color.white
 	border = Swing.EmptyBorder(1, 1, 1, 1)
-	
-	override def repaint() {
-		super.repaint()
-		println("Repaint2")
-	}
 }
 

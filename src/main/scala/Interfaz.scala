@@ -102,7 +102,6 @@ object barraMenu extends MenuBar {
 		val linHor : CheckMenuItem = new CheckMenuItem ("Lineas horizontales") {
 			action = new Action("Lineas horizontales") {
 				def apply = {
-					println(linHor.peer.isSelected)
 					panelCentral.lineasHorizontales = linHor.peer.isSelected
 					panelCentral.repaint()
 				}
@@ -111,7 +110,6 @@ object barraMenu extends MenuBar {
 		val linVer : CheckMenuItem = new CheckMenuItem ("Lineas verticales") {
 			action = new Action("Lineas verticales") {
 				def apply = {
-					println(linVer.peer.isSelected)
 					panelCentral.lineasVerticales = linVer.peer.isSelected
 					panelCentral.repaint()
 				}
