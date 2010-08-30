@@ -1,0 +1,19 @@
+(
+ :server-root "/home/kmels/.emacs.d/scala/ensime-0.0.13/"
+ :server-cmd "/home/kmels/.emacs.d/scala/ensime-0.0.13/bin/servear.sh"
+ :server-host "localhost"
+ :server-env ()
+
+ :project-package "gui"
+ :source ( :include("src/main/scala"
+		    "src/test/scala"
+		    ))
+ 
+ :use-sbt t
+ :dependency-jars("main")
+ :target "target/classes"
+
+ :classpath("/home/kmels/.emacs.d/scala/ensime-0.0.13/lib/ensime.jar"
+	    "/home/kmels/.emacs.d/scala/ensime-0.0.13/lib/scala-library.jar"
+ )
+
