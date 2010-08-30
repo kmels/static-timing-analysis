@@ -50,7 +50,6 @@ object Interfaz  extends SimpleSwingApplication {
 		// Configurar elementos
 		size = new Dimension(800,600)
 		
-		barraMenu.vista .linHor.doClick()
 	}
 }
 
@@ -100,8 +99,24 @@ object barraMenu extends MenuBar {
 		contents += new MenuItem("Pegar")
 	} 
 	val vista = new Menu("Vista") {
-		val linHor = new CheckMenuItem ("Lineas horizontales")
-		val linVer = new CheckMenuItem ("Lineas verticales")
+		val linHor : CheckMenuItem = new CheckMenuItem ("Lineas horizontales") {
+			action = new Action("Lineas horizontales") {
+				def apply = {
+					println(linHor.peer.isSelected)
+					panelCentral.lineasHorizontales = linHor.peer.isSelected
+					panelCentral.repaint()
+				}
+			}
+		}
+		val linVer : CheckMenuItem = new CheckMenuItem ("Lineas verticales") {
+			action = new Action("Lineas verticales") {
+				def apply = {
+					println(linVer.peer.isSelected)
+					panelCentral.lineasVerticales = linVer.peer.isSelected
+					panelCentral.repaint()
+				}
+			}
+		}
 		
         contents += linHor
         contents += linVer
