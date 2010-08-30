@@ -1,5 +1,6 @@
 package ed.gui
 
+import main._
 import swing._
 import scala.swing.Color
 import scala.swing.event._
@@ -13,7 +14,7 @@ object panelCentral extends TabbedPane() {
 	val fc = new FileChooser()
 
 	def addPage = {
-		val p = new TabbedPane.Page("Sin titulo ("+counter+")", new ScrollPane(new PanelPrincipal()))	
+		val p = new TabbedPane.Page("Sin titulo ("+counter+")", new ScrollPane(new PanelPrincipal(None)))	
 		counter += 1
 		pages += p
 		selection.page = p
@@ -43,9 +44,11 @@ trait LineasHorizontales extends Panel {
 	}
 }
 
-class PanelPrincipal extends Panel
+class PanelPrincipal(file : Option[GraphicalCircuit]) extends Panel
 		with LineasHorizontales with LineasVerticales {
 	background = Color.white
 	border = Swing.EmptyBorder(1, 1, 1, 1)
+	
+	lazy val circuito : GraphicalCircuit = if(file.isDefined) file.get else new GraphicalCircuit(List[GraphicalInput](), List[Gate](), "" )
 }
 
