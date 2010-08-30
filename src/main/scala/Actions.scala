@@ -1,8 +1,13 @@
 package ed.gui
 
+import main.Parser
 import scala.swing.Action
 import java.awt.event.{ KeyEvent, InputEvent }
 import javax.swing.{ KeyStroke, ImageIcon }
+
+object Creador extends main.Parser {
+	
+}
 
 object accionAbrir extends Action("Abrir") {
 	mnemonic = KeyEvent.VK_O
