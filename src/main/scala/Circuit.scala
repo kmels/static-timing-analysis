@@ -15,62 +15,117 @@ case class Circuit(val inputNames:List[String],val gates:List[Gate], val outputN
    * @param isValid wether is truthful or not.
    * abstraction for a route
    */
-  case class Route(val number:Int,val path:List[String], val isValid:Boolean){
+  case class Route(val number:Int,val path:List[String], val isValid:Boolean, finalState:Option[State]){    
+    //wirename => sensitized wire value
     private val sensitizedPathWires:Map[String,Option[Boolean]] = sensitize(path).keys.toMap
 
-    private val gateFunctions: Map[String,Boolean => Boolean] = path.map(
+    //wire name -> function application, used for computing both rising and falling delays
+    val gateFunctions: Map[String,Boolean => Boolean] = path.map(
       wireName =>
 	if (inputNames.contains(wireName)){
-	  val function: Boolean => Boolean = bValue => bValue
-	  (wireName,function)
+	  val booleanFunction: Boolean => Boolean = bValue => bValue
+	  (wireName,booleanFunction)
 	}	  
 	else
 	  gates.find(_.name == wireName) match{
 	    case Some(gate) => {
+	      //None if it's unary (it shouldn't have a sensitized value)
 	      val sensitizedWireName:Option[String] = 
 		gate match{
 		  case binaryGate:BinaryGate => 
-		    if (binaryGate.input1Name == wireName)
+		    if (path.contains(binaryGate.input1Name))
 		      Some(binaryGate.input2Name)
 		    else
 		      Some(binaryGate.input1Name)
 		  case _ => //unary gate 
 		    None
-		}
-	      
+		}	     
 	      //only binary gates have a sensitized value for one of their inputs
 	      val booleanFunction:Boolean => Boolean = sensitizedWireName match{
 		case Some(sensitizedWireName) => {
-		  //its a binary gate
-		  val sensitizedValue:Boolean = sensitizedPathWires(sensitizedWireName).get
-		  val booleanFunction: Boolean => Boolean = gate.operationName match {
-		    case "AND" => bValue => sensitizedValue && bValue
-		    case "OR" => bValue => sensitizedValue | bValue
-		  }
-		  booleanFunction
-		}
-		case _ => {//its a NOT gateb
+		  //its a binary gate or an input
+		  sensitizedPathWires.get(sensitizedWireName).get match{
+		    case Some(sensitizedValue) => { 
+		      val booleanFunctionForSensitizedWire:Boolean => Boolean = 
+			if (!inputNames.contains(sensitizedWireName))//its a gate
+			  gate.operationName match {
+			    case "AND" => bValue => sensitizedValue && bValue
+			    case "OR" => bValue => sensitizedValue | bValue
+			    case "NAND" => bValue => !(sensitizedValue && bValue)
+			    case "NOR" => bValue => !(sensitizedValue | bValue)
+			  }
+			else
+			  //its an input
+			  bValue => bValue
+		      
+		      booleanFunctionForSensitizedWire
+		    } //end Some(sensitizedValue)
+		    case _ => {
+		      val b:Boolean => Boolean = b => b
+		      b
+		    }
+		  }		  
+		} //end Some(sensitized value)
+		case _ => {//its a "NOT" gate
 		  val booleanFunction:Boolean => Boolean = bValue => !bValue
 		  booleanFunction
 		} 
 	      } //end sensitizedWireName
 	      (wireName,booleanFunction)
 	    } //end Some(gate)
-	    case _ => throw new Exception("Error in route#gateFunctions")	    
+	    case _ => throw new Exception("Error in route#gateFunctions: could not found gate")	    
 	  } //end gates.find
     ).toMap
 
     //pendiente
-    private val delay: Boolean => Int = inputValue => path.foldLeft[(Boolean,Int)](inputValue,0)(
-      (inputValue,delaySum) => {
-	(true,0)
+    private val delay: Boolean => Int = inputValue => {
+      var sum = 0
+      var result = inputValue
+
+      path.tail.foreach(
+	wireName => {
+	  result = gateFunctions(wireName)(result)	  
+	  val gate = gates.find(_.name == wireName).get	  
+	  val (risingDelayToSum,fallingDelayToSum) = gate match{
+	    case binaryGate:BinaryGate => {
+	      if (path.contains(binaryGate.input1Name))
+		binaryGate.delaySpec.input1Delays
+	      else
+		binaryGate.delaySpec.input2Delays
+	    }
+	    case unaryGate:UnaryGate => unaryGate.delaySpec.inputDelays
+	  }
+	  
+	  val toSum:Int = result match{
+	    case true => risingDelayToSum
+	    case _ => fallingDelayToSum
+	  }
+	  sum += toSum
+	}//end wireName
+      )
+      sum
+    }
+       
+    val fallingPropagationVector:Map[String,Option[Boolean]] = finalState match{
+      case Some(state) => {
+	println("state: "+state)	
+	val stateInputValues = state.keys.toMap
+	println("uno: "+stateInputValues.filter(inputNames.contains(_)))
+	stateInputValues.filter(inputNames.contains(_)) ++ inputNames.filterNot(stateInputValues.contains(_)).map(inputName => (inputName,None)).toMap
       }
-    )._2
-    
-    //pendiente
-    val propagationVector:Map[String,Boolean] = Map()
-    //pendiente: (falling delay,rising delay)
-    val delays:(Int,Int) = (delay(false),delay(true))
+      case _ => Map()
+    }
+    val risingPropagationVector:Map[String,Option[Boolean]] = finalState match{
+      case Some(state) => {
+	val stateInputValues = state.keys.toMap
+	stateInputValues.filter(inputNames.contains(_)) ++ inputNames.filterNot(stateInputValues.contains(_)).map(inputName => (inputName,None)).toMap
+      }
+      case _ => Map()
+    }
+    val fallingDelay:Int = delay(false)
+    val risingDelay:Int = delay(true)
+
+    override def toString = "Route: id="+number+", path="+path.mkString(",")+", valid="+isValid+", falling,rising delays="+fallingDelay+","+risingDelay+", (rising propagation vector, falling propagation vector="+(risingPropagationVector,fallingPropagationVector)+";"
   }
   /*
    * Computes the routes for this circuit
@@ -91,12 +146,15 @@ case class Circuit(val inputNames:List[String],val gates:List[Gate], val outputN
     
     val paths = getRoutesFrom(outputGate.name)
     paths.zipWithIndex.map(
-      routeWithIndex => 
+      routeWithIndex => {
+	val truthfulResult = isTruthful(routeWithIndex._1)
 	Route(
 	  routeWithIndex._2,
 	  routeWithIndex._1,
-	  isTruthful(routeWithIndex._1)
+	  truthfulResult._1,
+	  truthfulResult._2
 	)
+      }
     )
   }
   
@@ -104,9 +162,9 @@ case class Circuit(val inputNames:List[String],val gates:List[Gate], val outputN
    * Checks if a route is valid
    * 
    * @param route the list of gates in order
-   * @returns true if the route is valid within this circuit
+   * @returns true if the route is valid within this circuit and the optional final state
    */
-  private def isTruthful(route:List[String]):Boolean = {
+  private def isTruthful(route:List[String]):(Boolean,Option[State]) = {
     import collection.mutable.ListBuffer
     val uncheckedStates = ListBuffer(sensitize(route)) //initial states is the sensitized values for this route
     val justifiedStates = ListBuffer[State]()
@@ -140,6 +198,9 @@ case class Circuit(val inputNames:List[String],val gates:List[Gate], val outputN
       uncheckedStates ++= justValidStates
     }
     
-    justifiedStates.size > 0
+      if (justifiedStates.size > 0)
+	(justifiedStates.size > 0,Some(justifiedStates.head))
+      else
+	(justifiedStates.size > 0,None)
   }
 }
