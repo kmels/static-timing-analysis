@@ -5,7 +5,73 @@ case class Circuit(val inputNames:List[String],val gates:List[Gate], val outputN
     case Some(gate) => gate
     case _ => throw InputError("Output gate \""+outputName+"\" wasn't specified")
   }
+  
+  //pendiente
+  //val criticalPath
 
+  /*
+   * @param number the id of the route
+   * @param the route's path
+   * @param isValid wether is truthful or not.
+   * abstraction for a route
+   */
+  case class Route(val number:Int,val path:List[String], val isValid:Boolean){
+    private val sensitizedPathWires:Map[String,Option[Boolean]] = sensitize(path).keys.toMap
+
+    private val gateFunctions: Map[String,Boolean => Boolean] = path.map(
+      wireName =>
+	if (inputNames.contains(wireName)){
+	  val function: Boolean => Boolean = bValue => bValue
+	  (wireName,function)
+	}	  
+	else
+	  gates.find(_.name == wireName) match{
+	    case Some(gate) => {
+	      val sensitizedWireName:Option[String] = 
+		gate match{
+		  case binaryGate:BinaryGate => 
+		    if (binaryGate.input1Name == wireName)
+		      Some(binaryGate.input2Name)
+		    else
+		      Some(binaryGate.input1Name)
+		  case _ => //unary gate 
+		    None
+		}
+	      
+	      //only binary gates have a sensitized value for one of their inputs
+	      val booleanFunction:Boolean => Boolean = sensitizedWireName match{
+		case Some(sensitizedWireName) => {
+		  //its a binary gate
+		  val sensitizedValue:Boolean = sensitizedPathWires(sensitizedWireName).get
+		  val booleanFunction: Boolean => Boolean = gate.operationName match {
+		    case "AND" => bValue => sensitizedValue && bValue
+		    case "OR" => bValue => sensitizedValue | bValue
+		  }
+		  booleanFunction
+		}
+		case _ => {//its a NOT gateb
+		  val booleanFunction:Boolean => Boolean = bValue => !bValue
+		  booleanFunction
+		} 
+	      } //end sensitizedWireName
+	      (wireName,booleanFunction)
+	    } //end Some(gate)
+	    case _ => throw new Exception("Error in route#gateFunctions")	    
+	  } //end gates.find
+    ).toMap
+
+    //pendiente
+    private val delay: Boolean => Int = inputValue => path.foldLeft[(Boolean,Int)](inputValue,0)(
+      (inputValue,delaySum) => {
+	(true,0)
+      }
+    )._2
+    
+    //pendiente
+    val propagationVector:Map[String,Boolean] = Map()
+    //pendiente: (falling delay,rising delay)
+    val delays:(Int,Int) = (delay(false),delay(true))
+  }
   /*
    * Computes the routes for this circuit
    *

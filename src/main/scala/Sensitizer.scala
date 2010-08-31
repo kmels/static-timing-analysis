@@ -8,10 +8,9 @@ trait Sensitizer {
   val inputNames:List[String]
   val gates:List[Gate]
   val outputGate:Gate
-  
-  case class Route(val number:Int,val route:List[String], val isValid:Boolean)
 
   def sensitize(route:List[String]):State = {
+    println("Sensetizando: "+route)
     val binaryGatesInRoute:List[BinaryGate] = route.map(gateName => gates.find(_.name == gateName)).flatten.flatMap({
       case binaryGate:BinaryGate => Some(binaryGate)
       case _ => None
@@ -25,10 +24,14 @@ trait Sensitizer {
       }
     })	
     
-    binaryGatesInRoute.zip(inputsToSentitize).map(zippedGateWithInputs => {
+    val r = binaryGatesInRoute.zip(inputsToSentitize).map(zippedGateWithInputs => {
       val sensitizedWire:SensitizedWire = (zippedGateWithInputs._2,zippedGateWithInputs._1.propagationValue)
 	val justifiedWire:(SensitizedWire,Boolean) = (sensitizedWire,false)
 	  justifiedWire
     }).toMap
+
+    println("valores: "+r.keys.toMap)
+
+    r
   } //end sensitize
 }
