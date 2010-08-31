@@ -5,6 +5,7 @@ trait Gate {
   val name:String
   val delaySpec:DelaySpec
   val propagationValue:Option[Boolean]
+  val operationName:String
 }
 
 trait Operation{
